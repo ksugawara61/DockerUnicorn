@@ -2,13 +2,13 @@ FROM alpine:3.10
 
 LABEL maintenar "katsuya sugawara"
 
-ENV APP_ROOT /var/www/html
+ENV APP_ROOT /var/www/html/app
 ENV PATH /usr/local/rbenv/shims:/usr/local/rbenv/bin:$PATH
 ENV RBENV_ROOT /usr/local/rbenv
 ENV RUBY_VERSION 2.5.1
 
 ENV UNICORN_ENV production
-ENV UNICORN_PID_PATH /var/run
+ENV UNICORN_PID_PATH /var/run/unicorn
 ENV UNICORN_LOG_PATH /var/log/unicorn
 ENV UNICORN_WORKER_PROCESSES 2
 ENV UNICORN_TIMEOUT 300
@@ -16,7 +16,11 @@ ENV UNICORN_TIMEOUT 300
 # if you would like to use unix socket, you can use it to change ENV param from INET to UNIX
 ENV UNICORN_SOCKET_TYPE INET
 
-RUN mkdir -p ${APP_ROOT} ${UNICORN_LOG_PATH}
+# preparation
+RUN mkdir -p ${APP_ROOT} ${UNICORN_PID_PATH} ${UNICORN_LOG_PATH}
+RUN addgroup unicorn \
+ && adduser -DG unicorn unicorn
+RUN chown -R unicorn: ${APP_ROOT} ${UNICORN_PID_PATH} ${UNICORN_LOG_PATH}
 
 # for rbenv and ruby setting
 RUN apk add --update \
@@ -44,17 +48,18 @@ RUN echo 'eval "$(rbenv init -)"' >> /etc/profile.d/rbenv.sh
 RUN rbenv install $RUBY_VERSION \
  && rbenv global $RUBY_VERSION
 
-RUN gem install bundler
+RUN gem install bundler unicorn
 
 # for default unicorn setting
-ADD ./app ${APP_ROOT}/app
-WORKDIR ${APP_ROOT}/app
-RUN bundle install --path vendor/bundle
+USER unicorn
+ADD ./app ${APP_ROOT}
+WORKDIR ${APP_ROOT}
+RUN if [ -e 'Gemfile' ]; then bundle install --path vendor/bundle; fi
 
 # port setting
 EXPOSE 3000
 
 # volume setting
-VOLUME /var/log/unicorn
+VOLUME ${UNICORN_LOG_PATH}
 
-ENTRYPOINT bundle exec unicorn -c ${APP_ROOT}/app/config/unicorn.rb -E ${UNICORN_ENV}
+ENTRYPOINT bundle exec unicorn -c ${APP_ROOT}/config/unicorn.rb -E ${UNICORN_ENV}
