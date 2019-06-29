@@ -1,7 +1,7 @@
 # coding: utf-8
-app_root = File.expand_path('../../', __FILE__)
+app_root = ENV['APP_ROOT'] #File.expand_path('../../', __FILE__)
 
-ENV['BUNDLE_GEMFILE'] = app_root + "/Gemfile"
+#ENV['BUNDLE_GEMFILE'] = app_root + "/Gemfile"
 
 log_path = ENV['UNICORN_LOG_PATH']
 pid_path = ENV['UNICORN_PID_PATH']
