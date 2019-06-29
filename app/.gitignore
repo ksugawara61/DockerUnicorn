@@ -1,0 +1,6 @@
+/Gemfile.lock
+/vendor/bundle/
+/.bundle
+/log/*.log
+/tmp/sockets/*.sock
+/tmp/pids/*.pid
