@@ -21,9 +21,8 @@ ENV UNICORN_SOCKET_TYPE INET
 RUN mkdir -p ${APP_ROOT} ${UNICORN_CONFIG_PATH} ${UNICORN_PID_PATH} ${UNICORN_LOG_PATH}
 RUN addgroup unicorn \
  && adduser -DG unicorn unicorn
-RUN chown -R unicorn: ${APP_ROOT} ${UNICORN_CONFIG_PATH} ${UNICORN_PID_PATH} ${UNICORN_LOG_PATH}
+RUN chown -R unicorn: ${UNICORN_PID_PATH} ${UNICORN_LOG_PATH}
 
-# for rbenv and ruby setting
 RUN apk add --update \
   bash \
   git \
@@ -37,8 +36,13 @@ RUN apk add --update \
   linux-headers \
   imagemagick-dev \
   libffi-dev \
+  postgresql-dev \
+  nodejs \
+  yarn \
+  tzdata \
  && rm -rf /var/cache/apk/*
 
+# for rbenv setting
 RUN git clone --depth 1 git://github.com/sstephenson/rbenv.git ${RBENV_ROOT} \
  && git clone --depth 1 https://github.com/sstephenson/ruby-build.git ${RBENV_ROOT}/plugins/ruby-build \
  && git clone --depth 1 git://github.com/jf/rbenv-gemset.git ${RBENV_ROOT}/plugins/rbenv-gemset \
@@ -46,15 +50,18 @@ RUN git clone --depth 1 git://github.com/sstephenson/rbenv.git ${RBENV_ROOT} \
 
 RUN echo 'eval "$(rbenv init -)"' >> /etc/profile.d/rbenv.sh
 
+# for ruby setting
 RUN rbenv install $RUBY_VERSION \
  && rbenv global $RUBY_VERSION
 
 RUN gem install bundler unicorn
 
 # for default unicorn setting
+COPY ./unicorn.rb ${UNICORN_CONFIG_PATH}/unicorn.rb
+COPY ./app ${APP_ROOT}
+RUN chown -R unicorn: ${APP_ROOT} ${UNICORN_CONFIG_PATH}
+
 USER unicorn
-ADD ./unicorn.rb ${UNICORN_CONFIG_PATH}/unicorn.rb
-ADD ./app ${APP_ROOT}
 WORKDIR ${APP_ROOT}
 RUN if [ -e 'Gemfile' ]; then bundle install --path vendor/bundle; fi
 
