@@ -7,6 +7,8 @@ ENV PATH /usr/local/rbenv/shims:/usr/local/rbenv/bin:$PATH
 ENV RBENV_ROOT /usr/local/rbenv
 ENV RUBY_VERSION 2.5.1
 
+ENV BUNDLE_VERSION 1.16.4
+
 ENV UNICORN_ENV production
 ENV UNICORN_CONFIG_PATH /etc/unicorn
 ENV UNICORN_PID_PATH /var/run/unicorn
@@ -54,7 +56,8 @@ RUN echo 'eval "$(rbenv init -)"' >> /etc/profile.d/rbenv.sh
 RUN rbenv install $RUBY_VERSION \
  && rbenv global $RUBY_VERSION
 
-RUN gem install bundler unicorn
+RUN gem install bundler -v $BUNDLE_VERSION \
+  && gem install unicorn
 
 # for default unicorn setting
 COPY ./unicorn.rb ${UNICORN_CONFIG_PATH}/unicorn.rb
